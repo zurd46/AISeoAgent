@@ -11,7 +11,7 @@ import {
   displayLLMRecommendations,
   displayFinalSummary,
 } from './ui.js';
-import { fetchPage } from '../tools/scraper.js';
+import { fetchPage, fetchPageLight } from '../tools/scraper.js';
 import { runAllChecks } from '../tools/seoChecks.js';
 import { searchCompetitors, extractKeywordsFromText, searchKeywordRankings } from '../tools/search.js';
 import { buildSEOWorkflow } from '../graph/workflow.js';
@@ -117,16 +117,15 @@ export async function runFullAnalysis(url: string): Promise<void> {
   // Competitor Analysis - mit echtem SEO-Crawling der Top-Konkurrenten
   const competitorPromise = (async () => {
     try {
-      const topKeywords = extractKeywordsFromText(crawlData!.textContent, 10);
+      const topKeywords = extractKeywordsFromText(crawlData!.textContent, 15);
       const keywordStrings = topKeywords.map((k) => k.word);
-      if (crawlData!.meta.title) keywordStrings.unshift(crawlData!.meta.title);
 
       const competitors = await searchCompetitors(normalizedUrl, keywordStrings);
 
       // Top 3 Konkurrenten tatsaechlich crawlen fuer SEO-Vergleich
       const crawlPromises = competitors.slice(0, 3).map(async (comp) => {
         try {
-          const compCrawl = await fetchPage(comp.url);
+          const compCrawl = await fetchPageLight(comp.url);
           const seo: CompetitorSEO = {
             titleLength: compCrawl.meta.titleLength,
             descriptionLength: compCrawl.meta.descriptionLength,

@@ -61,6 +61,37 @@ async function duckduckgoSearch(query: string, maxResults = 10): Promise<SearchR
   return results;
 }
 
+// Domains die keine echten Konkurrenten sind (Social Media, Woerterbuecher, etc.)
+const EXCLUDED_DOMAINS = new Set([
+  // Social Media & Plattformen
+  'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'x.com',
+  'linkedin.com', 'github.com', 'reddit.com', 'pinterest.com', 'tiktok.com',
+  'medium.com', 'quora.com', 'stackoverflow.com',
+  // E-Commerce
+  'amazon.com', 'amazon.de', 'amazon.ch', 'ebay.com', 'ebay.de', 'ebay.ch',
+  'aliexpress.com',
+  // Suchmaschinen
+  'google.com', 'google.de', 'google.ch', 'bing.com', 'yahoo.com',
+  // Enzyklopaedien & Woerterbuecher
+  'wikipedia.org', 'wiktionary.org', 'wikimedia.org',
+  'dict.cc', 'leo.org', 'duden.de', 'dwds.de', 'linguee.com', 'linguee.de',
+  'deepl.com', 'translate.google.com', 'pons.com', 'pons.de',
+  'collinsdictionary.com', 'dictionary.cambridge.org', 'dictionary.reverso.net',
+  'merriam-webster.com', 'thefreedictionary.com', 'wordreference.com',
+  'langenscheidt.com', 'en.langenscheidt.com', 'de.langenscheidt.com',
+  'bab.la', 'en.bab.la', 'de.bab.la',
+  // Tourismus & Reisen
+  'myswitzerland.com', 'lonelyplanet.com', 'tripadvisor.com', 'tripadvisor.de',
+  'booking.com', 'airbnb.com',
+  // Behoerden & Verwaltung
+  'admin.ch', 'fedpol.admin.ch', 'ch.ch',
+  // Raetsel & Spiele
+  'fsolver.fr', 'kreuzwort-raetsel.net',
+  // News & Medien
+  'spiegel.de', 'bild.de', 'focus.de', 'stern.de', 'zeit.de', 'faz.net',
+  'nzz.ch', 'blick.ch', 'tagesanzeiger.ch', '20min.ch', 'srf.ch',
+]);
+
 /**
  * Find competitor websites for given keywords.
  */
@@ -78,8 +109,20 @@ export async function searchCompetitors(
 
   const competitors = new Map<string, CompetitorInfo>();
 
-  // Search for top keywords
-  const searchKeywords = keywords.slice(0, 5);
+  // Keyword-Kombinationen fuer relevante Konkurrenz-Suche erstellen
+  // Einzelne Woerter wie "unternehmen" liefern Woerterbuch-Ergebnisse
+  // Deshalb 2-3 Keywords kombinieren fuer kontextbezogene Suche
+  const topWords = keywords.slice(0, 8);
+  const searchKeywords: string[] = [];
+
+  // Kombination von 2 Keywords (z.B. "softwareentwicklung luzern")
+  for (let i = 0; i < Math.min(topWords.length, 4); i++) {
+    for (let j = i + 1; j < Math.min(topWords.length, 5); j++) {
+      searchKeywords.push(`${topWords[i]} ${topWords[j]}`);
+      if (searchKeywords.length >= 7) break;
+    }
+    if (searchKeywords.length >= 7) break;
+  }
 
   for (const kw of searchKeywords) {
     const results = await duckduckgoSearch(kw, maxResults);
@@ -92,8 +135,12 @@ export async function searchCompetitors(
         continue;
       }
 
-      // Skip own domain
+      // Skip eigene Domain, leere und ausgeschlossene Domains
       if (domain === targetDomain || !domain) continue;
+      if (EXCLUDED_DOMAINS.has(domain)) continue;
+      // Auch Subdomains der Ausschlussliste filtern
+      const rootDomain = domain.split('.').slice(-2).join('.');
+      if (EXCLUDED_DOMAINS.has(rootDomain)) continue;
 
       const existing = competitors.get(domain);
       if (existing) {
@@ -174,14 +221,29 @@ export function extractKeywordsFromText(
   topN = 20
 ): Array<{ word: string; count: number }> {
   const stopWords = new Set([
-    // German
+    // German (ASCII + Umlaute)
     'der', 'die', 'das', 'ein', 'eine', 'und', 'oder', 'aber', 'in', 'von',
-    'zu', 'mit', 'auf', 'an', 'fuer', 'ist', 'sind', 'war', 'hat', 'haben',
+    'zu', 'mit', 'auf', 'an', 'fuer', 'für', 'ist', 'sind', 'war', 'hat', 'haben',
     'wird', 'werden', 'kann', 'nicht', 'auch', 'als', 'nach', 'bei', 'aus',
     'wie', 'wenn', 'den', 'dem', 'des', 'sich', 'es', 'ich', 'wir', 'sie',
-    'er', 'ihr', 'uns', 'was', 'noch', 'nur', 'so', 'da', 'ueber', 'vor',
-    'bis', 'durch', 'unter', 'ohne', 'dass', 'diese', 'dieser', 'dieses',
+    'er', 'ihr', 'uns', 'was', 'noch', 'nur', 'so', 'da', 'ueber', 'über', 'vor',
+    'bis', 'durch', 'unter', 'ohne', 'dass', 'daß', 'diese', 'dieser', 'dieses',
     'einem', 'einen', 'einer', 'zum', 'zur', 'im', 'am', 'vom', 'mehr',
+    'können', 'müssen', 'würde', 'hätte', 'wäre', 'möchte', 'sollen', 'dürfen',
+    'würden', 'könnten', 'hätten', 'wären', 'möchten',
+    'unsere', 'unserer', 'unserem', 'unseren', 'ihre', 'ihren', 'ihrem', 'ihrer',
+    'seine', 'seinen', 'seinem', 'seiner', 'meine', 'meinen', 'meinem', 'meiner',
+    'jede', 'jeder', 'jedem', 'jeden', 'alle', 'allem', 'allen', 'aller', 'alles',
+    'welche', 'welcher', 'welchem', 'keine', 'keinen', 'keinem', 'keiner', 'kein',
+    'hier', 'dort', 'dann', 'wann', 'immer', 'wieder', 'andere', 'anderer',
+    'anderen', 'anderes', 'viel', 'viele', 'vielen', 'sehr', 'ganz',
+    'etwas', 'etwa', 'sogar', 'erst', 'seit', 'gegen', 'wegen', 'trotz',
+    'schon', 'doch', 'mal', 'bereits', 'außerdem', 'außer', 'nämlich',
+    'damit', 'daran', 'dabei', 'dazu', 'darauf', 'darum', 'daher',
+    'lassen', 'lässt', 'machen', 'macht', 'geben', 'gibt', 'gehen', 'geht',
+    'kommen', 'kommt', 'sagen', 'sagt', 'sehen', 'sieht', 'stehen', 'steht',
+    'wissen', 'weiss', 'weiß', 'finden', 'findet', 'nehmen', 'nimmt',
+    'zwischen', 'während', 'natürlich',
     // English
     'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had',
     'her', 'was', 'one', 'our', 'out', 'has', 'have', 'been', 'from',

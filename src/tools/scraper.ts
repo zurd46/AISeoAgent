@@ -10,6 +10,65 @@ import type {
   StructuredDataItem,
 } from '../types.js';
 
+// ─── Template Placeholder Filter ─────────────────────────────
+// Erkennt ungerenderte Template-Syntax (Vue {{ }}, Angular, etc.)
+const TEMPLATE_PLACEHOLDER_RE = /\{\{.*?\}\}/;
+
+function containsTemplatePlaceholder(text: string): boolean {
+  return TEMPLATE_PLACEHOLDER_RE.test(text);
+}
+
+function cleanTemplatePlaceholders(text: string): string {
+  return text.replace(/\{\{.*?\}\}/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// ─── Puppeteer Rendering ─────────────────────────────────────
+
+interface RenderedPage {
+  html: string;
+  finalUrl: string;
+  statusCode: number;
+  elapsedMs: number;
+}
+
+async function renderWithPuppeteer(url: string): Promise<RenderedPage | null> {
+  try {
+    const puppeteer = await import('puppeteer');
+    const browser = await puppeteer.default.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setUserAgent(config.http.userAgent);
+      await page.setViewport({ width: 1920, height: 1080 });
+
+      const start = performance.now();
+      const response = await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: config.http.timeout,
+      });
+      const elapsedMs = performance.now() - start;
+
+      // Warten bis Framework gerendert hat
+      await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+
+      const html = await page.content();
+      const finalUrl = page.url();
+      const statusCode = response?.status() || 0;
+
+      return { html, finalUrl, statusCode, elapsedMs: Math.round(elapsedMs) };
+    } finally {
+      await browser.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
+// ─── Main Fetch Function ─────────────────────────────────────
+
 export async function fetchPage(inputUrl: string): Promise<CrawlData> {
   let url = inputUrl.trim();
   if (!url.startsWith('http')) url = `https://${url}`;
@@ -17,61 +76,70 @@ export async function fetchPage(inputUrl: string): Promise<CrawlData> {
   const parsedUrl = new URL(url);
   const baseDomain = parsedUrl.hostname;
 
-  // Fetch main page
-  const start = performance.now();
-  const resp = await fetch(url, {
-    headers: { 'User-Agent': config.http.userAgent },
-    redirect: 'follow',
-    signal: AbortSignal.timeout(config.http.timeout),
-  });
-  const elapsedMs = performance.now() - start;
-  const html = await resp.text();
+  let html: string;
+  let finalUrl: string;
+  let statusCode: number;
+  let elapsedMs: number;
+  let usedPuppeteer = false;
+
+  // Versuch 1: Puppeteer (JavaScript-Rendering)
+  const rendered = await renderWithPuppeteer(url);
+  if (rendered) {
+    html = rendered.html;
+    finalUrl = rendered.finalUrl;
+    statusCode = rendered.statusCode;
+    elapsedMs = rendered.elapsedMs;
+    usedPuppeteer = true;
+  } else {
+    // Fallback: Cheerio (nur HTML)
+    const start = performance.now();
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': config.http.userAgent },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(config.http.timeout),
+    });
+    elapsedMs = Math.round(performance.now() - start);
+    html = await resp.text();
+    finalUrl = resp.url;
+    statusCode = resp.status;
+  }
 
   const pageInfo: PageInfo = {
     url,
-    finalUrl: resp.url,
-    statusCode: resp.status,
-    responseTimeMs: Math.round(elapsedMs),
+    finalUrl,
+    statusCode,
+    responseTimeMs: elapsedMs,
     contentLength: html.length,
-    contentType: resp.headers.get('content-type') || '',
+    contentType: 'text/html',
     wordCount: 0,
     language: '',
     charset: '',
-    hasHttps: resp.url.startsWith('https'),
+    hasHttps: finalUrl.startsWith('https'),
     hasRobotsTxt: false,
     hasSitemap: false,
     robotsTxtContent: '',
   };
 
-  // Check robots.txt
-  try {
-    const robotsResp = await fetch(
-      `${parsedUrl.protocol}//${parsedUrl.host}/robots.txt`,
-      {
-        headers: { 'User-Agent': config.http.userAgent },
-        signal: AbortSignal.timeout(5000),
-      }
-    );
-    if (robotsResp.ok) {
-      pageInfo.hasRobotsTxt = true;
-      pageInfo.robotsTxtContent = (await robotsResp.text()).slice(0, 2000);
-    }
-  } catch {
-    // ignore
-  }
+  // Check robots.txt & sitemap.xml parallel
+  const [robotsResult, sitemapResult] = await Promise.all([
+    fetch(`${parsedUrl.protocol}//${parsedUrl.host}/robots.txt`, {
+      headers: { 'User-Agent': config.http.userAgent },
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null),
+    fetch(`${parsedUrl.protocol}//${parsedUrl.host}/sitemap.xml`, {
+      headers: { 'User-Agent': config.http.userAgent },
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null),
+  ]);
 
-  // Check sitemap.xml
-  try {
-    const sitemapResp = await fetch(
-      `${parsedUrl.protocol}//${parsedUrl.host}/sitemap.xml`,
-      {
-        headers: { 'User-Agent': config.http.userAgent },
-        signal: AbortSignal.timeout(5000),
-      }
-    );
-    pageInfo.hasSitemap = sitemapResp.ok;
-  } catch {
-    // ignore
+  if (robotsResult?.ok) {
+    pageInfo.hasRobotsTxt = true;
+    try {
+      pageInfo.robotsTxtContent = (await robotsResult.text()).slice(0, 2000);
+    } catch { /* ignore */ }
+  }
+  if (sitemapResult?.ok) {
+    pageInfo.hasSitemap = true;
   }
 
   // Parse HTML
@@ -110,6 +178,68 @@ export async function fetchPage(inputUrl: string): Promise<CrawlData> {
   };
 }
 
+// ─── Quick fetch without Puppeteer (for competitor crawling) ──
+
+export async function fetchPageLight(inputUrl: string): Promise<CrawlData> {
+  let url = inputUrl.trim();
+  if (!url.startsWith('http')) url = `https://${url}`;
+
+  const parsedUrl = new URL(url);
+  const baseDomain = parsedUrl.hostname;
+
+  const start = performance.now();
+  const resp = await fetch(url, {
+    headers: { 'User-Agent': config.http.userAgent },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(config.http.timeout),
+  });
+  const elapsedMs = Math.round(performance.now() - start);
+  const html = await resp.text();
+
+  const pageInfo: PageInfo = {
+    url,
+    finalUrl: resp.url,
+    statusCode: resp.status,
+    responseTimeMs: elapsedMs,
+    contentLength: html.length,
+    contentType: resp.headers.get('content-type') || '',
+    wordCount: 0,
+    language: '',
+    charset: '',
+    hasHttps: resp.url.startsWith('https'),
+    hasRobotsTxt: false,
+    hasSitemap: false,
+    robotsTxtContent: '',
+  };
+
+  const $ = cheerio.load(html);
+  $('script, style, noscript').remove();
+  const textContent = $('body').text().replace(/\s+/g, ' ').trim();
+  pageInfo.wordCount = textContent.split(/\s+/).filter(Boolean).length;
+
+  const $full = cheerio.load(html);
+  pageInfo.language = $full('html').attr('lang') || '';
+
+  const meta = extractMeta($full);
+  const headings = extractHeadings($full);
+  const links = extractLinks($full, url, baseDomain);
+  const images = extractImages($full);
+  const structuredData = extractStructuredData($full);
+
+  return {
+    pageInfo,
+    meta,
+    headings,
+    links,
+    images,
+    structuredData,
+    rawHtml: html.slice(0, 50000),
+    textContent: textContent.slice(0, 10000),
+  };
+}
+
+// ─── Extraction Functions ────────────────────────────────────
+
 function extractMeta($: cheerio.CheerioAPI): MetaInfo {
   const title = $('title').first().text().trim();
 
@@ -140,14 +270,19 @@ function extractMeta($: cheerio.CheerioAPI): MetaInfo {
 function extractHeadings($: cheerio.CheerioAPI): HeadingInfo[] {
   const headings: HeadingInfo[] = [];
   // WICHTIG: In Dokumentreihenfolge extrahieren (nicht per Level!)
-  // Sonst ist die Hierarchie-Pruefung falsch
   $('h1, h2, h3, h4, h5, h6').each((_, el) => {
     const tagName = $(el).prop('tagName')?.toLowerCase() || '';
     const level = parseInt(tagName.replace('h', ''), 10);
-    const text = $(el).text().trim();
-    if (text && !isNaN(level)) {
-      headings.push({ tag: tagName, text: text.slice(0, 200), level });
+    let text = $(el).text().trim();
+    if (!text || isNaN(level)) return;
+
+    // Template-Platzhalter filtern (z.B. Vue {{ }}, Angular, etc.)
+    if (containsTemplatePlaceholder(text)) {
+      text = cleanTemplatePlaceholders(text);
+      if (!text) return; // Komplett aus Platzhaltern bestehend -> ueberspringen
     }
+
+    headings.push({ tag: tagName, text: text.slice(0, 200), level });
   });
   return headings;
 }
@@ -183,7 +318,7 @@ function extractLinks(
     links.push({
       url: fullUrl,
       text: $(el).text().trim().slice(0, 100),
-      isInternal: linkDomain === baseDomain,
+      isInternal: linkDomain === baseDomain || linkDomain === `www.${baseDomain}` || baseDomain === `www.${linkDomain}`,
       isNofollow: rel.includes('nofollow'),
       hasTitle: !!$(el).attr('title'),
     });
