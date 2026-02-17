@@ -158,12 +158,13 @@ export function displayIssues(analysis: SEOAnalysis): void {
 
 // ─── Competitor Display ──────────────────────────────────────
 
-export function displayCompetitors(data: CompetitorData): void {
+export function displayCompetitors(data: CompetitorData, targetCrawl?: CrawlData): void {
   if (data.competitors.length === 0) {
     console.log(chalk.yellow('  Keine Konkurrenten gefunden.'));
     return;
   }
 
+  // Basis-Tabelle
   const table = new Table({
     head: [
       chalk.bold('#'),
@@ -186,6 +187,94 @@ export function displayCompetitors(data: CompetitorData): void {
   });
 
   console.log(table.toString());
+
+  // SEO-Vergleichstabelle fuer gecrawlte Konkurrenten
+  const crawledComps = data.competitors.filter((c) => c.seo);
+  if (crawledComps.length > 0) {
+    console.log('');
+    console.log(chalk.bold(COOL_GRADIENT('  SEO-Vergleich mit Top-Konkurrenten')));
+
+    const compTable = new Table({
+      head: [
+        chalk.bold('Metrik'),
+        chalk.bold('Ziel-Seite'),
+        ...crawledComps.slice(0, 3).map((c) => chalk.bold(c.domain.slice(0, 15))),
+      ],
+      style: { head: ['cyan'], border: ['gray'] },
+      wordWrap: true,
+    });
+
+    // Target site SEO values for comparison
+    const targetSEO = targetCrawl ? {
+      wordCount: targetCrawl.pageInfo.wordCount,
+      titleLength: targetCrawl.meta.titleLength,
+      descriptionLength: targetCrawl.meta.descriptionLength,
+      responseTimeMs: targetCrawl.pageInfo.responseTimeMs,
+      imageCount: targetCrawl.images.length,
+      internalLinks: targetCrawl.links.filter((l) => l.isInternal).length,
+      hasStructuredData: targetCrawl.structuredData.length > 0,
+      hasOgTags: !!targetCrawl.meta.ogTitle,
+      hasTwitterCard: !!targetCrawl.meta.twitterCard,
+    } : null;
+
+    const metrics = [
+      { label: 'Woerter', key: 'wordCount' as const },
+      { label: 'Title (Zeichen)', key: 'titleLength' as const },
+      { label: 'Description (Z.)', key: 'descriptionLength' as const },
+      { label: 'Ladezeit (ms)', key: 'responseTimeMs' as const },
+      { label: 'Bilder', key: 'imageCount' as const },
+      { label: 'Interne Links', key: 'internalLinks' as const },
+    ];
+
+    for (const m of metrics) {
+      const targetVal = targetSEO ? String(targetSEO[m.key]) : chalk.dim('-');
+      compTable.push([
+        m.label,
+        chalk.bold(targetVal),
+        ...crawledComps.slice(0, 3).map((c) => String(c.seo?.[m.key] ?? '-')),
+      ]);
+    }
+
+    // Boolean metrics
+    const boolMetrics = [
+      { label: 'Schema.org', key: 'hasStructuredData' as const },
+      { label: 'Open Graph', key: 'hasOgTags' as const },
+      { label: 'Twitter Card', key: 'hasTwitterCard' as const },
+    ];
+
+    const yes = chalk.green('✓');
+    const no = chalk.red('✗');
+
+    for (const m of boolMetrics) {
+      const targetVal = targetSEO ? (targetSEO[m.key] ? yes : no) : chalk.dim('-');
+      compTable.push([
+        m.label,
+        targetVal,
+        ...crawledComps.slice(0, 3).map((c) => c.seo?.[m.key] ? yes : no),
+      ]);
+    }
+
+    console.log(compTable.toString());
+
+    // Staerken/Schwaechen der Konkurrenten
+    for (const comp of crawledComps.slice(0, 3)) {
+      if (comp.strengths.length > 0 || comp.weaknesses.length > 0) {
+        console.log(`\n  ${chalk.bold(comp.domain)}:`);
+        for (const s of comp.strengths) console.log(`    ${chalk.red('↑')} ${s}`);
+        for (const w of comp.weaknesses) console.log(`    ${chalk.green('↓')} ${w}`);
+      }
+    }
+  }
+
+  // Vorteile / Luecken
+  if (data.competitiveAdvantages.length > 0) {
+    console.log(`\n  ${chalk.bold.green('Ihre Vorteile:')}`);
+    data.competitiveAdvantages.forEach((a) => console.log(`    ${chalk.green('+')} ${a}`));
+  }
+  if (data.competitiveGaps.length > 0) {
+    console.log(`\n  ${chalk.bold.red('Ihre Luecken:')}`);
+    data.competitiveGaps.forEach((g) => console.log(`    ${chalk.red('-')} ${g}`));
+  }
 }
 
 // ─── Keyword Display ─────────────────────────────────────────

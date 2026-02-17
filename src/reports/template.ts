@@ -492,6 +492,117 @@ export const REPORT_TEMPLATE = `<!DOCTYPE html>
       </table>
       {{/if}}
 
+      <!-- SEO Comparison Table -->
+      {{#if competitorData.crawledCompetitors.length}}
+      <h3>SEO-Vergleich mit Top-Konkurrenten</h3>
+      <table>
+        <tr>
+          <th>Metrik</th>
+          <th style="color: var(--accent);">Ziel-Seite</th>
+          {{#each competitorData.crawledCompetitors}}
+          <th>{{this.domain}}</th>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Woerter</strong></td>
+          <td style="color: var(--accent);">{{targetSEO.wordCount}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{this.seo.wordCount}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Title (Zeichen)</strong></td>
+          <td style="color: var(--accent);">{{targetSEO.titleLength}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{this.seo.titleLength}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Description (Zeichen)</strong></td>
+          <td style="color: var(--accent);">{{targetSEO.descriptionLength}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{this.seo.descriptionLength}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Ladezeit (ms)</strong></td>
+          <td style="color: var(--accent);">{{targetSEO.responseTimeMs}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{this.seo.responseTimeMs}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Bilder</strong></td>
+          <td style="color: var(--accent);">{{targetSEO.imageCount}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{this.seo.imageCount}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Interne Links</strong></td>
+          <td style="color: var(--accent);">{{targetSEO.internalLinks}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{this.seo.internalLinks}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Schema.org</strong></td>
+          <td>{{#if targetSEO.hasStructuredData}}<span class="check">✓</span>{{else}}<span class="cross">✗</span>{{/if}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{#if this.seo.hasStructuredData}}<span class="check">✓</span>{{else}}<span class="cross">✗</span>{{/if}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Open Graph</strong></td>
+          <td>{{#if targetSEO.hasOgTags}}<span class="check">✓</span>{{else}}<span class="cross">✗</span>{{/if}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{#if this.seo.hasOgTags}}<span class="check">✓</span>{{else}}<span class="cross">✗</span>{{/if}}</td>
+          {{/each}}
+        </tr>
+        <tr>
+          <td><strong>Twitter Card</strong></td>
+          <td>{{#if targetSEO.hasTwitterCard}}<span class="check">✓</span>{{else}}<span class="cross">✗</span>{{/if}}</td>
+          {{#each competitorData.crawledCompetitors}}
+          <td>{{#if this.seo.hasTwitterCard}}<span class="check">✓</span>{{else}}<span class="cross">✗</span>{{/if}}</td>
+          {{/each}}
+        </tr>
+      </table>
+
+      <!-- Strengths & Weaknesses per Competitor -->
+      {{#each competitorData.crawledCompetitors}}
+      {{#if this.hasDetails}}
+      <div style="margin-top: 1rem;">
+        <h3 style="font-size: 1rem;">{{this.domain}}</h3>
+        {{#each this.strengths}}
+        <div style="color: var(--red); padding: 0.2rem 0;">↑ {{this}}</div>
+        {{/each}}
+        {{#each this.weaknesses}}
+        <div style="color: var(--green); padding: 0.2rem 0;">↓ {{this}}</div>
+        {{/each}}
+      </div>
+      {{/if}}
+      {{/each}}
+      {{/if}}
+
+      <!-- Competitive Advantages & Gaps -->
+      {{#if competitorData.competitiveAdvantages.length}}
+      <h3 style="color: var(--green);">Ihre Vorteile</h3>
+      <ul style="list-style: none; padding: 0;">
+        {{#each competitorData.competitiveAdvantages}}
+        <li style="padding: 0.3rem 0;"><span class="check">+</span> {{this}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+
+      {{#if competitorData.competitiveGaps.length}}
+      <h3 style="color: var(--red);">Ihre Luecken</h3>
+      <ul style="list-style: none; padding: 0;">
+        {{#each competitorData.competitiveGaps}}
+        <li style="padding: 0.3rem 0;"><span class="cross">-</span> {{this}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+
       {{#if competitorData.llmAnalysis}}
       <div class="llm-box">
         <div class="llm-label">AI Wettbewerbsanalyse</div>

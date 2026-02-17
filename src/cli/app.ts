@@ -114,7 +114,7 @@ export async function runFullAnalysis(url: string): Promise<void> {
 
   competitorSpinner.start();
 
-  // Competitor Analysis
+  // Competitor Analysis - mit echtem SEO-Crawling der Top-Konkurrenten
   const competitorPromise = (async () => {
     try {
       const topKeywords = extractKeywordsFromText(crawlData!.textContent, 10);
@@ -123,34 +123,106 @@ export async function runFullAnalysis(url: string): Promise<void> {
 
       const competitors = await searchCompetitors(normalizedUrl, keywordStrings);
 
+      // Top 3 Konkurrenten tatsaechlich crawlen fuer SEO-Vergleich
+      const crawlPromises = competitors.slice(0, 3).map(async (comp) => {
+        try {
+          const compCrawl = await fetchPage(comp.url);
+          const seo: CompetitorSEO = {
+            titleLength: compCrawl.meta.titleLength,
+            descriptionLength: compCrawl.meta.descriptionLength,
+            h1Count: compCrawl.headings.filter((h) => h.level === 1).length,
+            wordCount: compCrawl.pageInfo.wordCount,
+            hasHttps: compCrawl.pageInfo.hasHttps,
+            hasStructuredData: compCrawl.structuredData.length > 0,
+            structuredDataTypes: compCrawl.structuredData.map((s) => s.type),
+            imageCount: compCrawl.images.length,
+            imagesWithAlt: compCrawl.images.filter((i) => i.hasAlt).length,
+            internalLinks: compCrawl.links.filter((l) => l.isInternal).length,
+            externalLinks: compCrawl.links.filter((l) => !l.isInternal).length,
+            responseTimeMs: compCrawl.pageInfo.responseTimeMs,
+            hasOgTags: !!compCrawl.meta.ogTitle,
+            hasTwitterCard: !!compCrawl.meta.twitterCard,
+          };
+          comp.seo = seo;
+          comp.title = compCrawl.meta.title || comp.title;
+          comp.description = compCrawl.meta.description || comp.description;
+
+          // Staerken/Schwaechen im Vergleich zur Ziel-URL
+          if (seo.wordCount > crawlData!.pageInfo.wordCount * 1.5) comp.strengths.push(`Mehr Content (${seo.wordCount} Woerter)`);
+          if (seo.wordCount < crawlData!.pageInfo.wordCount * 0.5) comp.weaknesses.push(`Weniger Content (${seo.wordCount} Woerter)`);
+          if (seo.hasStructuredData && crawlData!.structuredData.length === 0) comp.strengths.push('Hat strukturierte Daten');
+          if (!seo.hasStructuredData && crawlData!.structuredData.length > 0) comp.weaknesses.push('Keine strukturierten Daten');
+          if (seo.hasOgTags && !crawlData!.meta.ogTitle) comp.strengths.push('Hat Open Graph Tags');
+          if (seo.internalLinks > crawlData!.links.filter((l) => l.isInternal).length * 1.5) comp.strengths.push('Staerkere interne Verlinkung');
+          if (seo.responseTimeMs < crawlData!.pageInfo.responseTimeMs * 0.5) comp.strengths.push(`Schnellere Ladezeit (${seo.responseTimeMs}ms)`);
+          if (seo.responseTimeMs > crawlData!.pageInfo.responseTimeMs * 2) comp.weaknesses.push(`Langsamere Ladezeit (${seo.responseTimeMs}ms)`);
+        } catch {
+          // Konnte Konkurrent nicht crawlen
+        }
+      });
+      await Promise.all(crawlPromises);
+
       const data: CompetitorData = {
         targetUrl: normalizedUrl,
         competitors,
-        marketSummary: `${competitors.length} Konkurrenten gefunden`,
+        marketSummary: `${competitors.length} Konkurrenten gefunden, Top ${Math.min(3, competitors.length)} im Detail analysiert`,
         competitiveAdvantages: [],
         competitiveGaps: [],
         llmAnalysis: '',
       };
 
-      // LLM analysis
+      // Vorteile und Luecken ableiten
+      const crawledComps = competitors.filter((c) => c.seo);
+      if (crawledComps.length > 0) {
+        const avgWordCount = Math.round(crawledComps.reduce((s, c) => s + (c.seo?.wordCount || 0), 0) / crawledComps.length);
+        if (crawlData!.pageInfo.wordCount > avgWordCount * 1.2) data.competitiveAdvantages.push(`Mehr Content als Durchschnitt (${crawlData!.pageInfo.wordCount} vs. ${avgWordCount})`);
+        if (crawlData!.pageInfo.wordCount < avgWordCount * 0.8) data.competitiveGaps.push(`Weniger Content als Durchschnitt (${crawlData!.pageInfo.wordCount} vs. ${avgWordCount})`);
+
+        const compsWithSD = crawledComps.filter((c) => c.seo?.hasStructuredData).length;
+        if (crawlData!.structuredData.length > 0 && compsWithSD < crawledComps.length / 2) data.competitiveAdvantages.push('Strukturierte Daten (Mehrheit der Konkurrenten hat keine)');
+        if (crawlData!.structuredData.length === 0 && compsWithSD > crawledComps.length / 2) data.competitiveGaps.push('Keine strukturierten Daten (Mehrheit der Konkurrenten hat welche)');
+      }
+
+      // LLM-Analyse mit echten SEO-Daten der Konkurrenten
       if (competitors.length > 0) {
         try {
           const llm = await getLLM();
-          const competitorList = competitors.slice(0, 5)
-            .map((c) => `- ${c.domain}: "${c.title}" (Keywords: ${c.keywordOverlap.join(', ')})`)
-            .join('\n');
 
-          const response = await llm.invoke(
-            `Du bist ein Wettbewerbsanalyst. Analysiere auf Deutsch:\n\nZiel: ${normalizedUrl}\nTitle: ${crawlData!.meta.title}\n\nKonkurrenten:\n${competitorList}\n\nGib: 1) Ueberblick 2) Vorteile 3) Luecken 4) Top 3 Empfehlungen`
-          );
-          data.llmAnalysis =
-            typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+          const compDetails = competitors.slice(0, 5).map((c) => {
+            const seoInfo = c.seo
+              ? `\n    Woerter: ${c.seo.wordCount}, Title: ${c.seo.titleLength}Z, Ladezeit: ${c.seo.responseTimeMs}ms, Schema: ${c.seo.structuredDataTypes.join(', ') || 'Keine'}, OG: ${c.seo.hasOgTags ? 'Ja' : 'Nein'}`
+              : '';
+            return `- ${c.domain}: "${c.title}" (Keyword-Overlap: ${c.keywordOverlap.join(', ')})${seoInfo}${c.strengths.length ? `\n    Staerken vs. Ziel: ${c.strengths.join(', ')}` : ''}${c.weaknesses.length ? `\n    Schwaechen vs. Ziel: ${c.weaknesses.join(', ')}` : ''}`;
+          }).join('\n');
+
+          const targetInfo = `URL: ${normalizedUrl}\nTitle: "${crawlData!.meta.title}" (${crawlData!.meta.titleLength}Z)\nDescription: ${crawlData!.meta.descriptionLength}Z\nWoerter: ${crawlData!.pageInfo.wordCount}\nLadezeit: ${crawlData!.pageInfo.responseTimeMs}ms\nStrukt. Daten: ${crawlData!.structuredData.map((s) => s.type).join(', ') || 'Keine'}\nOG-Tags: ${crawlData!.meta.ogTitle ? 'Ja' : 'Nein'}`;
+
+          const prompt = `Du bist ein erfahrener SEO- und Wettbewerbsanalyst. Vergleiche die Ziel-Webseite mit ihren Konkurrenten und erstelle eine detaillierte Analyse auf Deutsch.
+
+ZIEL-WEBSEITE:
+${targetInfo}
+
+KONKURRENTEN (mit SEO-Daten):
+${compDetails}
+
+${data.competitiveAdvantages.length ? `Ermittelte Vorteile: ${data.competitiveAdvantages.join(', ')}` : ''}
+${data.competitiveGaps.length ? `Ermittelte Luecken: ${data.competitiveGaps.join(', ')}` : ''}
+
+Erstelle eine strukturierte Analyse mit:
+1. WETTBEWERBSUEBERBLICK - Wie ist die Position der Ziel-Webseite im Vergleich?
+2. STAERKEN - Was macht die Ziel-Webseite besser als die Konkurrenz?
+3. SCHWAECHEN - Wo ist die Konkurrenz besser?
+4. CHANCEN - Welche SEO-Massnahmen wuerden den groessten Wettbewerbsvorteil bringen?
+5. TOP 5 MASSNAHMEN - Priorisierte, konkrete Handlungsempfehlungen`;
+
+          const response = await llm.invoke(prompt);
+          data.llmAnalysis = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
         } catch {
-          data.llmAnalysis = 'LLM nicht verfuegbar.';
+          data.llmAnalysis = 'LLM nicht verfuegbar fuer Wettbewerbsanalyse.';
         }
       }
 
-      competitorSpinner.succeed(chalk.green(`${competitors.length} Konkurrenten gefunden`));
+      competitorSpinner.succeed(chalk.green(`${competitors.length} Konkurrenten gefunden, ${crawledComps.length} im Detail analysiert`));
       return data;
     } catch (error) {
       competitorSpinner.fail(chalk.red(`Konkurrenzanalyse fehlgeschlagen: ${error}`));
@@ -264,7 +336,7 @@ export async function runFullAnalysis(url: string): Promise<void> {
   if (competitorData) {
     console.log('');
     console.log(chalk.bold(COOL_GRADIENT('  Konkurrenz-Analyse')));
-    displayCompetitors(competitorData);
+    displayCompetitors(competitorData, crawlData!);
 
     if (competitorData.llmAnalysis) {
       displayLLMRecommendations('Wettbewerbs-Analyse', competitorData.llmAnalysis);

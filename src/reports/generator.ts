@@ -66,7 +66,22 @@ export function generateHtmlReport(report: SEOReport): string {
         }
       : null,
 
-    // Add rank numbers to competitors
+    // Target site SEO values for comparison table
+    targetSEO: report.crawlData
+      ? {
+          wordCount: report.crawlData.pageInfo.wordCount,
+          titleLength: report.crawlData.meta.titleLength,
+          descriptionLength: report.crawlData.meta.descriptionLength,
+          responseTimeMs: report.crawlData.pageInfo.responseTimeMs,
+          imageCount: report.crawlData.images.length,
+          internalLinks: report.crawlData.links.filter((l) => l.isInternal).length,
+          hasStructuredData: report.crawlData.structuredData.length > 0,
+          hasOgTags: !!report.crawlData.meta.ogTitle,
+          hasTwitterCard: !!report.crawlData.meta.twitterCard,
+        }
+      : null,
+
+    // Add rank numbers to competitors + crawled subset
     competitorData: report.competitorData
       ? {
           ...report.competitorData,
@@ -74,6 +89,13 @@ export function generateHtmlReport(report: SEOReport): string {
             ...c,
             rank: i + 1,
           })),
+          crawledCompetitors: report.competitorData.competitors
+            .filter((c) => c.seo)
+            .slice(0, 3)
+            .map((c) => ({
+              ...c,
+              hasDetails: c.strengths.length > 0 || c.weaknesses.length > 0,
+            })),
         }
       : null,
   };

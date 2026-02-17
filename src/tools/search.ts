@@ -109,6 +109,7 @@ export async function searchCompetitors(
           keywordOverlap: [kw],
           strengths: [],
           weaknesses: [],
+          seo: null,
         });
       }
     }
