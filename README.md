@@ -119,7 +119,7 @@ AISeoAgent/
 
 ```bash
 # Repository klonen
-git clone https://github.com/YOUR_USERNAME/ai-seo-agent.git
+git clone https://github.com/zurd46/ai-seo-agent.git
 cd ai-seo-agent
 
 # Dependencies installieren
