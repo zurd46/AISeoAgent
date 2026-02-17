@@ -746,5 +746,73 @@ export const REPORT_TEMPLATE = `<!DOCTYPE html>
     </div>
 
   </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+  <script>
+    function downloadPDF() {
+      var btn = document.querySelector('.pdf-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;width:18px;height:18px"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generiere PDF...';
+
+      var element = document.getElementById('report-content');
+      var filename = document.title.replace(/[^a-zA-Z0-9_\\-]/g, '_') + '.pdf';
+
+      var opt = {
+        margin: [12, 10, 18, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#0f0f23',
+          logging: false,
+          letterRendering: true
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: {
+          mode: ['css', 'legacy'],
+          avoid: ['.info-item', '.score-bar-container', '.score-section', '.llm-box', '.badge']
+        }
+      };
+
+      html2pdf().set(opt).from(element).toPdf().get('pdf').then(function(pdf) {
+        var totalPages = pdf.internal.getNumberOfPages();
+        var pageWidth = pdf.internal.pageSize.getWidth();
+        var pageHeight = pdf.internal.pageSize.getHeight();
+
+        for (var i = 1; i <= totalPages; i++) {
+          pdf.setPage(i);
+          pdf.setFontSize(8);
+          pdf.setTextColor(136, 136, 170);
+          pdf.text(
+            'Seite ' + i + ' von ' + totalPages,
+            pageWidth / 2,
+            pageHeight - 8,
+            { align: 'center' }
+          );
+          pdf.text(
+            'AI SEO Agent Report',
+            10,
+            pageHeight - 8
+          );
+        }
+      }).save().then(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF Download';
+      }).catch(function(err) {
+        console.error('PDF error:', err);
+        btn.disabled = false;
+        btn.innerHTML = 'PDF Download fehlgeschlagen - erneut versuchen';
+      });
+    }
+  </script>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </body>
 </html>`;
