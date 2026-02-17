@@ -300,33 +300,200 @@ export const REPORT_TEMPLATE = `<!DOCTYPE html>
       transform: translateY(-2px);
       box-shadow: 0 6px 24px rgba(0,210,255,0.4);
     }
-    .pdf-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
     .pdf-btn svg {
       width: 18px;
       height: 18px;
     }
 
-    /* PDF page-break rules */
-    .card {
-      page-break-inside: avoid;
+    /* ===== PRINT / PDF STYLES ===== */
+    @page {
+      size: A4;
+      margin: 18mm 14mm 22mm 14mm;
     }
-    .card:has(table tr:nth-child(n+8)) {
-      page-break-inside: auto;
-    }
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; page-break-after: auto; }
-    thead { display: table-header-group; }
-    .score-section { page-break-inside: avoid; }
-    .info-grid { page-break-inside: avoid; }
-    .score-bar-container { page-break-inside: avoid; }
 
     @media print {
+      /* Hide button */
       .pdf-btn { display: none !important; }
-      body { background: white; color: #1a1a2e; }
+
+      /* Reset to light theme */
+      * { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body {
+        background: #fff !important;
+        color: #1a1a1a !important;
+        font-size: 10pt;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+
+      /* Header: simple text block, no gradient */
+      .header {
+        background: #2a3a5c !important;
+        border-radius: 0;
+        padding: 1.2rem 1.5rem;
+        margin-bottom: 1rem;
+        text-align: left;
+      }
+      .header::before { display: none; }
+      .header h1 { font-size: 16pt; color: #fff; }
+      .header .url { font-size: 9pt; color: #ccc; }
+      .header .timestamp { font-size: 8pt; color: #bbb; }
+
+      /* Score circle: simple inline text */
+      .score-section {
+        margin: 0 0 0.8rem;
+        justify-content: flex-start;
+        padding-left: 0;
+      }
+      .score-circle {
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        background: none !important;
+        border: none !important;
+        box-shadow: none;
+        flex-direction: row;
+        gap: 0.4rem;
+        padding: 0.3rem 0;
+      }
+      .score-number { font-size: 18pt; }
+      .score-label { font-size: 10pt; color: #666; }
+
+      /* Cards: clean bordered sections */
+      .card {
+        background: #fff !important;
+        border: 1px solid #ccc !important;
+        border-radius: 4px;
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.8rem;
+        page-break-inside: auto;
+      }
+      .card h2 {
+        font-size: 12pt;
+        color: #1a1a1a;
+        border-bottom: 2px solid #2a3a5c;
+        border-image: none;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.3rem;
+      }
+      .card h3 {
+        font-size: 10pt;
+        color: #2a3a5c;
+        margin: 0.6rem 0 0.3rem;
+      }
+
+      /* Summary */
+      .summary-text {
+        font-size: 9.5pt;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      /* Tables: clean and compact */
+      table {
+        page-break-inside: auto;
+        font-size: 8.5pt;
+        border: 1px solid #ccc;
+      }
+      thead { display: table-header-group; }
+      tr { page-break-inside: avoid; }
+      th {
+        background: #eef1f5 !important;
+        color: #333 !important;
+        padding: 0.4rem 0.5rem;
+        font-size: 8pt;
+        border-bottom: 2px solid #ccc;
+      }
+      td {
+        padding: 0.35rem 0.5rem;
+        border-bottom: 1px solid #ddd;
+        color: #333;
+        font-size: 8.5pt;
+      }
+      tr:hover { background: none; }
+
+      /* Score bars: text-only fallback */
+      .score-bar-container {
+        page-break-inside: avoid;
+      }
+      .score-bar-track {
+        background: #e9ecef !important;
+        height: 14px;
+      }
+      .score-bar-fill.good { background: #28a745 !important; }
+      .score-bar-fill.ok { background: #ffc107 !important; }
+      .score-bar-fill.bad { background: #dc3545 !important; }
+      .score-bar-label { font-size: 8.5pt; width: 120px; color: #333; }
+      .score-bar-value { font-size: 8.5pt; color: #333; }
+
+      /* Badges: solid colors */
+      .badge { font-size: 7pt; padding: 0.15rem 0.4rem; }
+      .badge-critical { background: #dc3545 !important; color: #fff !important; }
+      .badge-warning { background: #fd7e14 !important; color: #fff !important; }
+      .badge-info { background: #0d6efd !important; color: #fff !important; }
+      .badge-good { background: #28a745 !important; color: #fff !important; }
+
+      /* Info grid */
+      .info-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+      }
+      .info-item {
+        background: #f5f6f8 !important;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+      }
+      .info-item .label { color: #666; font-size: 7.5pt; }
+      .info-item .value { font-size: 9pt; color: #1a1a1a; }
+      .info-item .value.ok { color: #28a745; }
+      .info-item .value.warn { color: #e6a800; }
+      .info-item .value.bad { color: #dc3545; }
+
+      /* Grid */
+      .grid-2 { gap: 0.8rem; }
+
+      /* LLM box */
+      .llm-box {
+        background: #f8f9fa !important;
+        border-left: 3px solid #2a3a5c;
+        padding: 0.6rem 0.8rem;
+        font-size: 8.5pt;
+        line-height: 1.5;
+        color: #333;
+      }
+      .llm-box .llm-label { color: #2a3a5c; font-size: 7.5pt; }
+
+      /* Keywords */
+      .keyword-chip {
+        background: #eef1f5 !important;
+        border: 1px solid #ccc !important;
+        color: #333 !important;
+        font-size: 8pt;
+        padding: 0.15rem 0.5rem;
+      }
+
+      /* Check / Cross */
+      .check { color: #28a745 !important; }
+      .cross { color: #dc3545 !important; }
+
+      /* Footer */
+      .footer {
+        font-size: 8pt;
+        color: #999;
+        padding: 0.5rem 0;
+        border-top: 1px solid #ddd;
+        margin-top: 0.5rem;
+      }
+
+      /* Prevent large empty spaces */
+      pre {
+        white-space: pre-wrap;
+        word-break: break-all;
+        font-size: 7pt;
+      }
     }
   </style>
 </head>
@@ -747,72 +914,10 @@ export const REPORT_TEMPLATE = `<!DOCTYPE html>
 
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
   <script>
     function downloadPDF() {
-      var btn = document.querySelector('.pdf-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;width:18px;height:18px"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generiere PDF...';
-
-      var element = document.getElementById('report-content');
-      var filename = document.title.replace(/[^a-zA-Z0-9_\\-]/g, '_') + '.pdf';
-
-      var opt = {
-        margin: [12, 10, 18, 10],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#0f0f23',
-          logging: false,
-          letterRendering: true
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait',
-          compress: true
-        },
-        pagebreak: {
-          mode: ['css', 'legacy'],
-          avoid: ['.info-item', '.score-bar-container', '.score-section', '.llm-box', '.badge']
-        }
-      };
-
-      html2pdf().set(opt).from(element).toPdf().get('pdf').then(function(pdf) {
-        var totalPages = pdf.internal.getNumberOfPages();
-        var pageWidth = pdf.internal.pageSize.getWidth();
-        var pageHeight = pdf.internal.pageSize.getHeight();
-
-        for (var i = 1; i <= totalPages; i++) {
-          pdf.setPage(i);
-          pdf.setFontSize(8);
-          pdf.setTextColor(136, 136, 170);
-          pdf.text(
-            'Seite ' + i + ' von ' + totalPages,
-            pageWidth / 2,
-            pageHeight - 8,
-            { align: 'center' }
-          );
-          pdf.text(
-            'AI SEO Agent Report',
-            10,
-            pageHeight - 8
-          );
-        }
-      }).save().then(function() {
-        btn.disabled = false;
-        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF Download';
-      }).catch(function(err) {
-        console.error('PDF error:', err);
-        btn.disabled = false;
-        btn.innerHTML = 'PDF Download fehlgeschlagen - erneut versuchen';
-      });
+      window.print();
     }
   </script>
-  <style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
 </body>
 </html>`;
