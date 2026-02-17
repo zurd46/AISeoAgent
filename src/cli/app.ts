@@ -17,7 +17,7 @@ import { searchCompetitors, extractKeywordsFromText, searchKeywordRankings } fro
 import { buildSEOWorkflow } from '../graph/workflow.js';
 import { generateHtmlReport } from '../reports/generator.js';
 import { getLLM } from '../config.js';
-import type { CrawlData, SEOAnalysis, CompetitorData, KeywordData, SEOReport } from '../types.js';
+import type { CrawlData, SEOAnalysis, CompetitorData, CompetitorSEO, KeywordData, SEOReport } from '../types.js';
 
 /**
  * Run a full SEO analysis via the animated CLI.

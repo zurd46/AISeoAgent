@@ -116,11 +116,13 @@ function extractMeta($: cheerio.CheerioAPI): MetaInfo {
   const getMetaContent = (selector: string): string =>
     $(selector).attr('content')?.trim() || '';
 
+  const description = getMetaContent('meta[name="description"]');
+
   return {
     title,
     titleLength: title.length,
-    description: getMetaContent('meta[name="description"]'),
-    descriptionLength: getMetaContent('meta[name="description"]').length,
+    description,
+    descriptionLength: description.length,
     keywords: getMetaContent('meta[name="keywords"]'),
     viewport: getMetaContent('meta[name="viewport"]'),
     robots: getMetaContent('meta[name="robots"]'),
@@ -137,14 +139,16 @@ function extractMeta($: cheerio.CheerioAPI): MetaInfo {
 
 function extractHeadings($: cheerio.CheerioAPI): HeadingInfo[] {
   const headings: HeadingInfo[] = [];
-  for (let level = 1; level <= 6; level++) {
-    $(`h${level}`).each((_, el) => {
-      const text = $(el).text().trim();
-      if (text) {
-        headings.push({ tag: `h${level}`, text: text.slice(0, 200), level });
-      }
-    });
-  }
+  // WICHTIG: In Dokumentreihenfolge extrahieren (nicht per Level!)
+  // Sonst ist die Hierarchie-Pruefung falsch
+  $('h1, h2, h3, h4, h5, h6').each((_, el) => {
+    const tagName = $(el).prop('tagName')?.toLowerCase() || '';
+    const level = parseInt(tagName.replace('h', ''), 10);
+    const text = $(el).text().trim();
+    if (text && !isNaN(level)) {
+      headings.push({ tag: tagName, text: text.slice(0, 200), level });
+    }
+  });
   return headings;
 }
 

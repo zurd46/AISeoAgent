@@ -130,6 +130,24 @@ export type SEOAnalysis = z.infer<typeof SEOAnalysisSchema>;
 
 // ─── Competitor ──────────────────────────────────────────────
 
+export const CompetitorSEOSchema = z.object({
+  titleLength: z.number().default(0),
+  descriptionLength: z.number().default(0),
+  h1Count: z.number().default(0),
+  wordCount: z.number().default(0),
+  hasHttps: z.boolean().default(false),
+  hasStructuredData: z.boolean().default(false),
+  structuredDataTypes: z.array(z.string()).default([]),
+  imageCount: z.number().default(0),
+  imagesWithAlt: z.number().default(0),
+  internalLinks: z.number().default(0),
+  externalLinks: z.number().default(0),
+  responseTimeMs: z.number().default(0),
+  hasOgTags: z.boolean().default(false),
+  hasTwitterCard: z.boolean().default(false),
+});
+export type CompetitorSEO = z.infer<typeof CompetitorSEOSchema>;
+
 export const CompetitorInfoSchema = z.object({
   url: z.string(),
   title: z.string().default(''),
@@ -138,6 +156,7 @@ export const CompetitorInfoSchema = z.object({
   keywordOverlap: z.array(z.string()).default([]),
   strengths: z.array(z.string()).default([]),
   weaknesses: z.array(z.string()).default([]),
+  seo: CompetitorSEOSchema.nullable().default(null),
 });
 export type CompetitorInfo = z.infer<typeof CompetitorInfoSchema>;
 
