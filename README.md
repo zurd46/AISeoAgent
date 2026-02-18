@@ -9,29 +9,29 @@
 <h1 align="center">AI SEO Agent</h1>
 
 <p align="center">
-  <strong>KI-gesteuertes SEO-Analyse-System mit parallelen Agenten und LangGraph-Orchestrierung</strong>
+  <strong>AI-powered SEO analysis system with parallel agents and LangGraph orchestration</strong>
 </p>
 
 <p align="center">
-  Open-Source CLI-Tool das Webseiten vollautomatisch auf SEO analysiert, Konkurrenten findet, Keywords bewertet und einen detaillierten HTML-Report generiert — alles lokal und kostenlos mit Ollama.
+  Open-source CLI tool that fully automatically analyzes websites for SEO, finds competitors, evaluates keywords, and generates a detailed HTML report — all locally and for free with Ollama.
 </p>
 
 ---
 
 ## Highlights
 
-- **5 spezialisierte AI-Agenten** arbeiten parallel an der Analyse
-- **LangGraph Orchestrator** steuert den Workflow mit Fan-Out/Fan-In Pattern
-- **Animierte CLI** mit ASCII-Art Banner, Gradient-Farben, Spinner und Score-Balken
-- **Komplett kostenlos** — Ollama (lokal) + DuckDuckGo (kein API-Key noetig)
-- **7 SEO-Check-Kategorien** mit 30+ individuellen Pruefungen
-- **HTML Dark-Theme Report** mit Score-Circle, Severity-Badges und AI-Empfehlungen
-- **Strukturierte Daten** durchgaengig mit Zod Schemas + TypeScript Types
-- **Graceful Degradation** — funktioniert auch ohne LLM (regelbasiert)
+- **5 specialized AI agents** working in parallel on the analysis
+- **LangGraph Orchestrator** controls the workflow with fan-out/fan-in pattern
+- **Animated CLI** with ASCII art banner, gradient colors, spinners, and score bars
+- **Completely free** — Ollama (local) + DuckDuckGo (no API key required)
+- **7 SEO check categories** with 30+ individual checks
+- **HTML dark-theme report** with score circle, severity badges, and AI recommendations
+- **Structured data** throughout with Zod schemas + TypeScript types
+- **Graceful degradation** — works without LLM (rule-based)
 
 ---
 
-## Architektur
+## Architecture
 
 ```
                          ┌─────────┐
@@ -39,7 +39,7 @@
                          └────┬────┘
                               │
                        ┌──────▼──────┐
-                       │   CRAWLER   │   Webseite fetchen + parsen
+                       │   CRAWLER   │   Fetch + parse website
                        │   Agent     │   (Cheerio HTML Parser)
                        └──────┬──────┘
                               │
@@ -48,14 +48,14 @@
        ┌──────▼──────┐ ┌─────▼──────┐ ┌──────▼──────┐
        │  ANALYZER   │ │ COMPETITOR │ │  KEYWORD    │   Parallel
        │  Agent      │ │ Agent      │ │  Agent      │   Execution
-       │  (SEO-Checks│ │ (DuckDuck- │ │  (Density,  │
+       │  (SEO Checks│ │ (DuckDuck- │ │  (Density,  │
        │  + LLM)     │ │  Go Search)│ │  Rankings)  │
        └──────┬──────┘ └─────┬──────┘ └──────┬──────┘
               │               │               │
               └───────────────┼───────────────┘
                               │
                        ┌──────▼──────┐
-                       │  REPORTER   │   HTML Report generieren
+                       │  REPORTER   │   Generate HTML report
                        │  Agent      │   (Handlebars Template)
                        └──────┬──────┘
                               │
@@ -64,111 +64,111 @@
                          └─────────┘
 ```
 
-### Projekt-Struktur
+### Project Structure
 
 ```
 AISeoAgent/
 ├── package.json                 # Dependencies + Scripts
 ├── tsconfig.json                # TypeScript ESM Config
-├── .env                         # LLM + HTTP Konfiguration
+├── .env                         # LLM + HTTP Configuration
 │
 ├── src/
 │   ├── index.ts                 # CLI Entry Point (Commander)
-│   ├── config.ts                # Konfiguration + LLM Factory
+│   ├── config.ts                # Configuration + LLM Factory
 │   ├── types.ts                 # Zod Schemas + TypeScript Types
 │   │
-│   ├── cli/                     # Animierte CLI
-│   │   ├── banner.ts            #   ASCII-Art + Gradient
-│   │   ├── ui.ts                #   Spinner, Tabellen, Score-Bars
-│   │   └── app.ts               #   CLI-Workflow + Steuerung
+│   ├── cli/                     # Animated CLI
+│   │   ├── banner.ts            #   ASCII Art + Gradient
+│   │   ├── ui.ts                #   Spinners, Tables, Score Bars
+│   │   └── app.ts               #   CLI Workflow + Control
 │   │
 │   ├── agents/                  # LangGraph Agent Nodes
 │   │   ├── crawler.ts           #   Website Crawler
-│   │   ├── analyzer.ts          #   SEO Analyse + LLM
-│   │   ├── competitor.ts        #   Konkurrenz-Suche
-│   │   ├── keyword.ts           #   Keyword-Analyse
-│   │   └── reporter.ts          #   Report-Generator
+│   │   ├── analyzer.ts          #   SEO Analysis + LLM
+│   │   ├── competitor.ts        #   Competitor Search
+│   │   ├── keyword.ts           #   Keyword Analysis
+│   │   └── reporter.ts          #   Report Generator
 │   │
 │   ├── graph/                   # LangGraph Orchestrator
 │   │   ├── state.ts             #   State Definition (Annotation)
-│   │   └── workflow.ts          #   Workflow (parallele Edges)
+│   │   └── workflow.ts          #   Workflow (Parallel Edges)
 │   │
-│   ├── tools/                   # Analyse-Werkzeuge
+│   ├── tools/                   # Analysis Tools
 │   │   ├── scraper.ts           #   Cheerio Web Scraper
-│   │   ├── seoChecks.ts         #   7 SEO-Check-Funktionen
+│   │   ├── seoChecks.ts         #   7 SEO Check Functions
 │   │   └── search.ts            #   DuckDuckGo Search
 │   │
-│   └── reports/                 # Report-Generierung
+│   └── reports/                 # Report Generation
 │       ├── generator.ts         #   Handlebars Renderer
 │       └── template.ts          #   Dark-Theme HTML Template
 │
-└── reports/                     # Generierte HTML-Reports
+└── reports/                     # Generated HTML Reports
 ```
 
 ---
 
 ## Installation
 
-### Voraussetzungen
+### Prerequisites
 
 - **Node.js** >= 18.0
-- **npm** oder **pnpm**
-- **Ollama** (optional, fuer AI-Empfehlungen)
+- **npm** or **pnpm**
+- **Ollama** (optional, for AI recommendations)
 
 ### Setup
 
 ```bash
-# Repository klonen
+# Clone the repository
 git clone https://github.com/zurd46/ai-seo-agent.git
 cd ai-seo-agent
 
-# Dependencies installieren
+# Install dependencies
 npm install
 
-# Umgebungsvariablen konfigurieren
+# Configure environment variables
 cp .env.example .env
 ```
 
-### Ollama einrichten (optional, kostenlos)
+### Set up Ollama (optional, free)
 
 ```bash
-# Ollama installieren (macOS)
+# Install Ollama (macOS)
 brew install ollama
 
-# Ollama starten
+# Start Ollama
 ollama serve
 
-# Modell herunterladen
+# Download a model
 ollama pull llama3.1
 ```
 
-> Ohne Ollama funktioniert das System vollstaendig mit regelbasierten SEO-Checks. Das LLM ergaenzt lediglich AI-generierte Empfehlungen und Zusammenfassungen.
+> Without Ollama, the system works fully with rule-based SEO checks. The LLM only adds AI-generated recommendations and summaries.
 
 ---
 
-## Nutzung
+## Usage
 
-### Vollstaendige SEO-Analyse
+### Full SEO Analysis
 
 ```bash
 npx tsx src/index.ts analyze https://example.com
 ```
 
-Fuehrt den kompletten Workflow durch:
+Runs the complete workflow:
 
-1. **Crawling** — Webseite laden, HTML parsen, Meta-Tags/Links/Bilder extrahieren
-2. **Parallele Analyse** — SEO-Checks, Konkurrenz-Suche, Keyword-Analyse gleichzeitig
-3. **Report** — HTML-Report generieren und im Browser oeffnen
+1. **Crawling** — Load website, parse HTML, extract meta tags/links/images
+2. **Parallel Analysis** — SEO checks, competitor search, keyword analysis simultaneously
+3. **Report** — Generate HTML report and open in browser
 
-### Schneller Crawl
+### Quick Crawl
 
 ```bash
 npx tsx src/index.ts crawl https://example.com
 ```
 
-Nur die Webseite crawlen und Basis-Informationen anzeigen (ohne Analyse).
+Only crawl the website and display basic information (without analysis).
 
-### Hilfe
+### Help
 
 ```bash
 npx tsx src/index.ts --help
@@ -176,84 +176,84 @@ npx tsx src/index.ts --help
 
 ---
 
-## SEO-Checks
+## SEO Checks
 
-Das System fuehrt **30+ individuelle Pruefungen** in 7 Kategorien durch:
+The system performs **30+ individual checks** across 7 categories:
 
-| Kategorie | Pruefungen |
+| Category | Checks |
 |---|---|
-| **Title Tag** | Vorhanden, Laenge (30-60 Zeichen), Keyword-Platzierung |
-| **Meta Description** | Vorhanden, Laenge (120-160 Zeichen), Unique |
-| **Headings** | H1 vorhanden (genau 1x), H2-Struktur, Hierarchie-Reihenfolge |
-| **Bilder** | Alt-Texte vorhanden, Lazy Loading, Dimensionen |
-| **Links** | Interne Verlinkung (10+), Anker-Texte, Nofollow |
-| **Technik** | HTTPS, Ladezeit (<500ms), Robots.txt, Sitemap, Viewport, Canonical |
-| **Content** | Wortanzahl (300+), Schema.org/JSON-LD, Open Graph Tags |
+| **Title Tag** | Present, length (30-60 characters), keyword placement |
+| **Meta Description** | Present, length (120-160 characters), unique |
+| **Headings** | H1 present (exactly 1), H2 structure, hierarchy order |
+| **Images** | Alt texts present, lazy loading, dimensions |
+| **Links** | Internal linking (10+), anchor texts, nofollow |
+| **Technical** | HTTPS, load time (<500ms), robots.txt, sitemap, viewport, canonical |
+| **Content** | Word count (300+), Schema.org/JSON-LD, Open Graph tags |
 
-### Severity-Stufen
+### Severity Levels
 
-- `KRITISCH` — Schwerwiegendes Problem, sofort beheben
-- `WARNUNG` — Sollte behoben werden, mittlere Prioritaet
-- `INFO` — Verbesserungsvorschlag, niedrige Prioritaet
-- `GUT` — Kein Handlungsbedarf
+- `CRITICAL` — Severe issue, fix immediately
+- `WARNING` — Should be fixed, medium priority
+- `INFO` — Improvement suggestion, low priority
+- `GOOD` — No action needed
 
 ---
 
-## Agenten im Detail
+## Agents in Detail
 
 ### Crawler Agent
 
-Fetcht die Ziel-URL und extrahiert saemtliche SEO-relevanten Daten:
+Fetches the target URL and extracts all SEO-relevant data:
 
-- HTTP Status, Ladezeit, Content-Type
-- Meta-Tags (Title, Description, Robots, Canonical, Viewport)
-- Open Graph + Twitter Card Tags
-- Heading-Struktur (H1-H6)
-- Interne und externe Links mit Anker-Texten
-- Bilder mit Alt-Text-Analyse
-- Schema.org / JSON-LD Structured Data
-- Robots.txt und Sitemap.xml Pruefung
+- HTTP status, load time, content type
+- Meta tags (title, description, robots, canonical, viewport)
+- Open Graph + Twitter Card tags
+- Heading structure (H1-H6)
+- Internal and external links with anchor texts
+- Images with alt text analysis
+- Schema.org / JSON-LD structured data
+- Robots.txt and sitemap.xml check
 
 ### Analyzer Agent
 
-Fuehrt alle 7 SEO-Check-Kategorien durch und berechnet Scores (0-100). Optional generiert ein LLM priorisierte Handlungsempfehlungen basierend auf den gefundenen Problemen.
+Runs all 7 SEO check categories and calculates scores (0-100). Optionally, an LLM generates prioritized action recommendations based on the issues found.
 
 ### Competitor Agent
 
-Sucht ueber DuckDuckGo nach Webseiten die fuer dieselben Keywords ranken. Identifiziert Keyword-Overlap und analysiert die Wettbewerbslandschaft. LLM-gesteuerte Wettbewerbsanalyse mit Staerken, Schwaechen und Chancen.
+Searches via DuckDuckGo for websites ranking for the same keywords. Identifies keyword overlap and analyzes the competitive landscape. LLM-driven competitive analysis with strengths, weaknesses, and opportunities.
 
 ### Keyword Agent
 
-Extrahiert die haeufigsten Keywords aus dem Seiteninhalt. Bewertet:
+Extracts the most frequent keywords from the page content. Evaluates:
 
-- **Keyword-Dichte** (Haeufigkeit im Text)
-- **Prominenz-Score** (Vorkommen in Title, H1, Description, URL)
-- **DuckDuckGo-Rankings** (approximative Position)
-- **Content-Gaps** (fehlende Keywords)
+- **Keyword density** (frequency in text)
+- **Prominence score** (presence in title, H1, description, URL)
+- **DuckDuckGo rankings** (approximate position)
+- **Content gaps** (missing keywords)
 
 ### Reporter Agent
 
-Generiert einen umfassenden HTML-Report im Dark-Theme Design mit:
+Generates a comprehensive HTML report in dark-theme design with:
 
-- Score-Circle Visualisierung
-- Kategorie-Score-Balken
-- Issue-Tabelle mit Severity-Badges
-- Konkurrenten-Uebersicht
-- Keyword-Analyse-Tabelle
-- AI-generierte Empfehlungen
-- Strukturierte Daten Uebersicht
+- Score circle visualization
+- Category score bars
+- Issue table with severity badges
+- Competitor overview
+- Keyword analysis table
+- AI-generated recommendations
+- Structured data overview
 
 ---
 
-## Konfiguration
+## Configuration
 
-### `.env` Datei
+### `.env` File
 
 ```env
-# LLM Provider: "ollama" (kostenlos), "openai" oder "anthropic"
+# LLM Provider: "ollama" (free), "openai" or "anthropic"
 LLM_PROVIDER=ollama
 
-# Ollama (Standard - kostenlos, lokal)
+# Ollama (default - free, local)
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.1
 
@@ -270,57 +270,57 @@ REQUEST_TIMEOUT=30
 MAX_CONCURRENT_REQUESTS=5
 ```
 
-### LLM-Provider wechseln
+### Switching LLM Provider
 
-Das System unterstuetzt 3 LLM-Provider:
+The system supports 3 LLM providers:
 
-| Provider | Kosten | Setup |
+| Provider | Cost | Setup |
 |---|---|---|
-| **Ollama** | Kostenlos | `ollama serve` + `ollama pull llama3.1` |
-| **OpenAI** | Kostenpflichtig | API-Key in `.env` setzen |
-| **Anthropic** | Kostenpflichtig | API-Key in `.env` setzen |
+| **Ollama** | Free | `ollama serve` + `ollama pull llama3.1` |
+| **OpenAI** | Paid | Set API key in `.env` |
+| **Anthropic** | Paid | Set API key in `.env` |
 
 ---
 
-## HTML-Report
+## HTML Report
 
-Der generierte Report beinhaltet:
+The generated report includes:
 
-- **Executive Summary** — AI-generierte Zusammenfassung der wichtigsten Erkenntnisse
-- **Seiten-Informationen** — Status, Ladezeit, HTTPS, Meta-Tags, Links, Bilder
-- **SEO-Bewertungen** — Score-Balken fuer jede der 7 Kategorien
-- **Gefundene Probleme** — Sortiert nach Severity mit Ist/Soll-Vergleich und Empfehlungen
-- **AI-Empfehlungen** — LLM-generierte priorisierte Handlungsempfehlungen
-- **Konkurrenz-Analyse** — Top-Konkurrenten mit Keyword-Overlap
-- **Keyword-Analyse** — Primaere/sekundaere Keywords mit Prominenz-Score
-- **Strukturierte Daten** — Gefundene Schema.org/JSON-LD Eintraege
+- **Executive Summary** — AI-generated summary of key findings
+- **Page Information** — Status, load time, HTTPS, meta tags, links, images
+- **SEO Scores** — Score bars for each of the 7 categories
+- **Issues Found** — Sorted by severity with actual/expected comparison and recommendations
+- **AI Recommendations** — LLM-generated prioritized action recommendations
+- **Competitor Analysis** — Top competitors with keyword overlap
+- **Keyword Analysis** — Primary/secondary keywords with prominence score
+- **Structured Data** — Found Schema.org/JSON-LD entries
 
-Reports werden unter `reports/` gespeichert und automatisch im Browser geoeffnet.
+Reports are saved under `reports/` and automatically opened in the browser.
 
 ---
 
 ## Tech Stack
 
-| Technologie | Verwendung |
+| Technology | Usage |
 |---|---|
-| **TypeScript** | Typsichere Codebasis, ESM Module |
-| **LangGraph** | Workflow-Orchestrierung mit paralleler Agent-Ausfuehrung |
-| **LangChain** | LLM-Abstraktion (Ollama, OpenAI, Anthropic) |
-| **Zod** | Schema-Validierung + TypeScript Type Inference |
-| **Cheerio** | Schnelles HTML Parsing (serverseitig) |
-| **Commander** | CLI Command Parsing |
-| **Chalk** | Terminal-Farben |
-| **Ora** | Terminal-Spinner/Animationen |
-| **Boxen** | Terminal-Boxen |
-| **Gradient-String** | Gradient-Text im Terminal |
-| **Figlet** | ASCII-Art Text |
-| **CLI-Table3** | Formatierte Terminal-Tabellen |
-| **Handlebars** | HTML Template Engine |
-| **DuckDuckGo** | Kostenlose Web-Suche (kein API-Key) |
+| **TypeScript** | Type-safe codebase, ESM modules |
+| **LangGraph** | Workflow orchestration with parallel agent execution |
+| **LangChain** | LLM abstraction (Ollama, OpenAI, Anthropic) |
+| **Zod** | Schema validation + TypeScript type inference |
+| **Cheerio** | Fast HTML parsing (server-side) |
+| **Commander** | CLI command parsing |
+| **Chalk** | Terminal colors |
+| **Ora** | Terminal spinners/animations |
+| **Boxen** | Terminal boxes |
+| **Gradient-String** | Gradient text in terminal |
+| **Figlet** | ASCII art text |
+| **CLI-Table3** | Formatted terminal tables |
+| **Handlebars** | HTML template engine |
+| **DuckDuckGo** | Free web search (no API key) |
 
 ---
 
-## CLI-Vorschau
+## CLI Preview
 
 ```
 ███████╗███████╗ ██████╗      █████╗  ██████╗ ███████╗███╗   ██╗████████╗
@@ -334,45 +334,45 @@ Reports werden unter `reports/` gespeichert und automatisch im Browser geoeffnet
   LangGraph Orchestrator + Parallel Agent Execution
 
   ▸ Phase 1: Website Crawling ·····························
-  ✔ Website erfolgreich gecrawlt
+  ✔ Website successfully crawled
 
-  ▸ Phase 2: Parallele Agent-Analyse ······················
-  ✔ SEO-Analyse abgeschlossen (Score: 64/100)
-  ✔ 10 Konkurrenten gefunden
-  ✔ 13 Keywords analysiert
+  ▸ Phase 2: Parallel Agent Analysis ······················
+  ✔ SEO analysis completed (Score: 64/100)
+  ✔ 10 competitors found
+  ✔ 13 keywords analyzed
 
-  ▸ Phase 3: Ergebnisse ···································
+  ▸ Phase 3: Results ······································
   ┌────────────────────┬──────────┬──────────────────────────────────┐
-  │ Kategorie          │ Score    │ Balken                           │
+  │ Category           │ Score    │ Bar                              │
   ├────────────────────┼──────────┼──────────────────────────────────┤
   │ Title Tag          │ 70/100   │ █████████████████████░░░░░░░░░   │
   │ Meta Description   │ 0/100    │ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
   │ Headings           │ 85/100   │ ██████████████████████████░░░░   │
-  │ Bilder             │ 100/100  │ ██████████████████████████████   │
-  │ Technik            │ 75/100   │ ███████████████████████░░░░░░░   │
+  │ Images             │ 100/100  │ ██████████████████████████████   │
+  │ Technical          │ 75/100   │ ███████████████████████░░░░░░░   │
   └────────────────────┴──────────┴──────────────────────────────────┘
 
-  ▸ Phase 4: Report-Generierung ···························
-  ✔ HTML-Report generiert
+  ▸ Phase 4: Report Generation ····························
+  ✔ HTML report generated
 
-  ╔═ SEO Analyse abgeschlossen ═══════════════════════════╗
-  ║  Report gespeichert: reports/seo_report_example.html  ║
-  ║  Dauer: 5.4s                                          ║
-  ╚═══════════════════════════════════════════════════════╝
+  ╔═ SEO Analysis Complete ═════════════════════════════════╗
+  ║  Report saved: reports/seo_report_example.html          ║
+  ║  Duration: 5.4s                                         ║
+  ╚═════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## Entwicklung
+## Development
 
 ```bash
-# TypeScript kompilieren
+# Compile TypeScript
 npm run build
 
-# Development Mode (tsx)
+# Development mode (tsx)
 npm run dev
 
-# Direkt ausfuehren
+# Run directly
 npx tsx src/index.ts analyze https://example.com
 ```
 
@@ -386,22 +386,22 @@ npx tsx src/index.ts analyze https://example.com
 
 ## Roadmap
 
-- [ ] Multi-Page Crawling (gesamte Website analysieren)
-- [ ] PDF-Report Export
-- [ ] Lighthouse Integration (Core Web Vitals)
-- [ ] Historischer Vergleich (Score-Verlauf ueber Zeit)
-- [ ] Broken Link Checker
-- [ ] Hreflang-Pruefung (Internationalisierung)
-- [ ] Backlink-Analyse
-- [ ] Content Readability Score (Flesch-Kincaid)
-- [ ] API-Modus (JSON Output fuer CI/CD Integration)
-- [ ] Docker Container
+- [ ] Multi-page crawling (analyze entire website)
+- [ ] PDF report export
+- [ ] Lighthouse integration (Core Web Vitals)
+- [ ] Historical comparison (score trends over time)
+- [ ] Broken link checker
+- [ ] Hreflang check (internationalization)
+- [ ] Backlink analysis
+- [ ] Content readability score (Flesch-Kincaid)
+- [ ] API mode (JSON output for CI/CD integration)
+- [ ] Docker container
 
 ---
 
-## Lizenz
+## License
 
-MIT License — siehe [LICENSE](LICENSE) fuer Details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
