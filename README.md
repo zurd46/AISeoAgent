@@ -102,6 +102,16 @@ AISeoAgent/
 │       ├── generator.ts         #   Handlebars Renderer
 │       └── template.ts          #   Dark-Theme HTML Template
 │
+├── mcp/                         # MCP Server (Model Context Protocol)
+│   ├── package.json             #   MCP Dependencies
+│   ├── tsconfig.json            #   TypeScript Config
+│   └── src/
+│       ├── index.ts             #   MCP Server Entry Point
+│       ├── types.ts             #   Shared Zod Schemas
+│       ├── scraper.ts           #   Web Scraper (Cheerio + Puppeteer)
+│       ├── seoChecks.ts         #   SEO Check Functions
+│       └── search.ts            #   DuckDuckGo Search
+│
 └── reports/                     # Generated HTML Reports
 ```
 
@@ -378,7 +388,65 @@ npx tsx src/index.ts analyze https://example.com
 
 ---
 
+## MCP Server (Model Context Protocol)
+
+The project includes an MCP server that exposes the full SEO analysis pipeline as tools for AI assistants (Claude, etc.). The server takes a URL as input and returns structured JSON results.
+
+### MCP Tools
+
+| Tool | Description |
+|---|---|
+| **`crawl_url`** | Crawl a website and extract all SEO-relevant data (meta tags, headings, links, images, structured data, load time, robots.txt, sitemap) |
+| **`analyze_seo`** | Run 30+ SEO checks across 9 categories and return scores (0-100) with detailed issues, severity levels, and recommendations |
+| **`find_competitors`** | Find competitor websites via DuckDuckGo, identify keyword overlap, and optionally crawl top competitors for detailed SEO comparison |
+| **`analyze_keywords`** | Extract keywords, calculate density and prominence scores, check approximate DuckDuckGo rankings |
+| **`full_seo_report`** | Run the complete pipeline (crawl + SEO analysis + competitors + keywords) and return a comprehensive structured report |
+
+### MCP Setup
+
+```bash
+# Install MCP server dependencies
+cd mcp
+npm install
+
+# Build
+npm run build
+
+# Run (stdio transport)
+npm start
+```
+
+### Claude Desktop Configuration
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ai-seo-agent": {
+      "command": "node",
+      "args": ["/path/to/AISeoAgent/mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+### Example Usage (via AI Assistant)
+
+Once configured, you can ask your AI assistant:
+
+- "Analyze the SEO of https://example.com"
+- "Find competitors for https://mysite.com"
+- "What keywords does https://example.com rank for?"
+- "Give me a full SEO report for https://example.com"
+
+The MCP server returns structured JSON data that the AI assistant can interpret and present in a readable format.
+
+---
+
 ## Keywords
+
+`seo` `seo-analysis` `seo-tool` `seo-audit` `seo-checker` `website-analysis` `ai-agent` `ai-seo` `langgraph` `langchain` `ollama` `typescript` `nodejs` `cli-tool` `web-scraping` `keyword-analysis` `competitor-analysis` `seo-report` `html-report` `open-source` `free-seo-tool` `duckduckgo` `structured-data` `schema-org` `meta-tags` `on-page-seo` `technical-seo` `mcp` `model-context-protocol`
 
 `seo` `seo-analysis` `seo-tool` `seo-audit` `seo-checker` `website-analysis` `ai-agent` `ai-seo` `langgraph` `langchain` `ollama` `typescript` `nodejs` `cli-tool` `web-scraping` `keyword-analysis` `competitor-analysis` `seo-report` `html-report` `open-source` `free-seo-tool` `duckduckgo` `structured-data` `schema-org` `meta-tags` `on-page-seo` `technical-seo`
 
@@ -394,6 +462,7 @@ npx tsx src/index.ts analyze https://example.com
 - [ ] Hreflang check (internationalization)
 - [ ] Backlink analysis
 - [ ] Content readability score (Flesch-Kincaid)
+- [x] MCP Server (Model Context Protocol for AI assistants)
 - [ ] API mode (JSON output for CI/CD integration)
 - [ ] Docker container
 
