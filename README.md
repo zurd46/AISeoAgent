@@ -24,7 +24,7 @@
 - **LangGraph Orchestrator** controls the workflow with fan-out/fan-in pattern
 - **Animated CLI** with ASCII art banner, gradient colors, spinners, and score bars
 - **Completely free** — Ollama (local) + DuckDuckGo (no API key required)
-- **7 SEO check categories** with 30+ individual checks
+- **12 SEO check categories** with 60+ individual checks
 - **HTML dark-theme report** with score circle, severity badges, and AI recommendations
 - **Structured data** throughout with Zod schemas + TypeScript types
 - **Graceful degradation** — works without LLM (rule-based)
