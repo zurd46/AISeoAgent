@@ -1,11 +1,6 @@
 import * as cheerio from 'cheerio';
+import { config } from './config_stub.js';
 import type { CompetitorInfo } from './types.js';
-
-const config = {
-  http: {
-    userAgent: 'Mozilla/5.0 (compatible; AI-SEO-Agent/1.0; +https://github.com/ai-seo-agent)',
-  },
-};
 
 interface SearchResult {
   title: string;

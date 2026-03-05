@@ -1,12 +1,16 @@
 import * as cheerio from 'cheerio';
 import { config } from '../config.js';
 import type {
+  AccessibilityInfo,
+  ContentDetailInfo,
   CrawlData,
   HeadingInfo,
+  HreflangTag,
   ImageInfo,
   LinkInfo,
   MetaInfo,
   PageInfo,
+  PerformanceInfo,
   StructuredDataItem,
 } from '../types.js';
 
@@ -165,6 +169,20 @@ export async function fetchPage(inputUrl: string): Promise<CrawlData> {
   const links = extractLinks($full, url, baseDomain);
   const images = extractImages($full);
   const structuredData = extractStructuredData($full);
+  const hreflangTags = extractHreflangTags($full);
+  const accessibility = extractAccessibilityInfo($full);
+  const perfInfo = extractPerformanceInfo($full, html, pageInfo.hasHttps);
+  const contentDetail = extractContentDetailInfo($full, textContent);
+
+  // Favicon
+  const hasFavicon = !!(
+    $full('link[rel="icon"]').length > 0 ||
+    $full('link[rel="shortcut icon"]').length > 0 ||
+    $full('link[rel="apple-touch-icon"]').length > 0
+  );
+
+  // DOCTYPE
+  const hasDoctype = /^<!doctype\s+html/i.test(html.trimStart());
 
   return {
     pageInfo,
@@ -175,6 +193,12 @@ export async function fetchPage(inputUrl: string): Promise<CrawlData> {
     structuredData,
     rawHtml: html.slice(0, 50000),
     textContent: textContent.slice(0, 10000),
+    hasFavicon,
+    hasDoctype,
+    hreflangTags,
+    accessibility,
+    performance: perfInfo,
+    contentDetail,
   };
 }
 
@@ -225,6 +249,17 @@ export async function fetchPageLight(inputUrl: string): Promise<CrawlData> {
   const links = extractLinks($full, url, baseDomain);
   const images = extractImages($full);
   const structuredData = extractStructuredData($full);
+  const hreflangTags = extractHreflangTags($full);
+  const accessibility = extractAccessibilityInfo($full);
+  const performanceInfo = extractPerformanceInfo($full, html, pageInfo.hasHttps);
+  const contentDetail = extractContentDetailInfo($full, textContent);
+
+  const hasFavicon = !!(
+    $full('link[rel="icon"]').length > 0 ||
+    $full('link[rel="shortcut icon"]').length > 0 ||
+    $full('link[rel="apple-touch-icon"]').length > 0
+  );
+  const hasDoctype = /^<!doctype\s+html/i.test(html.trimStart());
 
   return {
     pageInfo,
@@ -235,6 +270,12 @@ export async function fetchPageLight(inputUrl: string): Promise<CrawlData> {
     structuredData,
     rawHtml: html.slice(0, 50000),
     textContent: textContent.slice(0, 10000),
+    hasFavicon,
+    hasDoctype,
+    hreflangTags,
+    accessibility,
+    performance: performanceInfo,
+    contentDetail,
   };
 }
 
@@ -341,6 +382,183 @@ function extractImages($: cheerio.CheerioAPI): ImageInfo[] {
     });
   });
   return images;
+}
+
+function extractHreflangTags($: cheerio.CheerioAPI): HreflangTag[] {
+  const tags: HreflangTag[] = [];
+  $('link[rel="alternate"][hreflang]').each((_, el) => {
+    const lang = $(el).attr('hreflang') || '';
+    const href = $(el).attr('href') || '';
+    if (lang && href) {
+      tags.push({ lang, href });
+    }
+  });
+  return tags;
+}
+
+function extractAccessibilityInfo($: cheerio.CheerioAPI): AccessibilityInfo {
+  // Skip navigation
+  const hasSkipNavigation = $('a[href="#main"], a[href="#content"], a[href="#main-content"], a.skip-link, a.skip-nav, [class*="skip-to"]').length > 0;
+
+  // ARIA landmarks
+  const ariaLandmarks = $('[role="main"], [role="navigation"], [role="banner"], [role="contentinfo"], [role="complementary"], [role="search"], main, nav, header, footer, aside').length;
+
+  // Forms without labels
+  let formsTotal = 0;
+  let formsWithoutLabels = 0;
+  $('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea, select').each((_, el) => {
+    formsTotal++;
+    const id = $(el).attr('id');
+    const hasLabel = !!(
+      $(el).attr('aria-label') ||
+      $(el).attr('aria-labelledby') ||
+      $(el).attr('placeholder') ||
+      (id && $(`label[for="${id}"]`).length > 0) ||
+      $(el).closest('label').length > 0
+    );
+    if (!hasLabel) formsWithoutLabels++;
+  });
+
+  // Positive tabindex
+  let tabindexPositiveCount = 0;
+  $('[tabindex]').each((_, el) => {
+    const val = parseInt($(el).attr('tabindex') || '0', 10);
+    if (val > 0) tabindexPositiveCount++;
+  });
+
+  // Iframes without title
+  const iframes = $('iframe');
+  let iframesWithoutTitle = 0;
+  iframes.each((_, el) => {
+    if (!$(el).attr('title')) iframesWithoutTitle++;
+  });
+
+  // Buttons without accessible text
+  let buttonsWithoutText = 0;
+  $('button, [role="button"], input[type="button"], input[type="submit"]').each((_, el) => {
+    const hasText = !!(
+      $(el).text().trim() ||
+      $(el).attr('aria-label') ||
+      $(el).attr('aria-labelledby') ||
+      $(el).attr('value') ||
+      $(el).attr('title')
+    );
+    if (!hasText) buttonsWithoutText++;
+  });
+
+  return {
+    hasSkipNavigation,
+    hasAriaLandmarks: ariaLandmarks > 0,
+    ariaLandmarkCount: ariaLandmarks,
+    formsTotal,
+    formsWithoutLabels,
+    tabindexPositiveCount,
+    iframeCount: iframes.length,
+    iframesWithoutTitle,
+    buttonsWithoutText,
+  };
+}
+
+function extractPerformanceInfo($: cheerio.CheerioAPI, html: string, isHttps: boolean): PerformanceInfo {
+  // Inline styles
+  let inlineStyleBytes = 0;
+  const inlineStyles = $('style');
+  inlineStyles.each((_, el) => {
+    inlineStyleBytes += ($(el).html() || '').length;
+  });
+
+  // Inline scripts
+  let inlineScriptBytes = 0;
+  let inlineScriptCount = 0;
+  $('script:not([src])').each((_, el) => {
+    const content = $(el).html() || '';
+    if (content.trim().length > 0) {
+      inlineScriptCount++;
+      inlineScriptBytes += content.length;
+    }
+  });
+
+  // External resources
+  const externalStylesheetCount = $('link[rel="stylesheet"]').length;
+  const externalScripts = $('script[src]');
+  const externalScriptCount = externalScripts.length;
+
+  // Render-blocking scripts (scripts in <head> without async/defer)
+  let renderBlockingScripts = 0;
+  $('head script[src]').each((_, el) => {
+    if (!$(el).attr('async') && !$(el).attr('defer')) {
+      renderBlockingScripts++;
+    }
+  });
+
+  // Resource hints
+  const preconnectCount = $('link[rel="preconnect"]').length;
+  const prefetchCount = $('link[rel="prefetch"], link[rel="preload"], link[rel="dns-prefetch"]').length;
+
+  // Mixed content (HTTP resources on HTTPS pages)
+  const mixedContentUrls: string[] = [];
+  if (isHttps) {
+    $('script[src^="http:"], link[href^="http:"], img[src^="http:"], iframe[src^="http:"], video[src^="http:"], audio[src^="http:"]').each((_, el) => {
+      const src = $(el).attr('src') || $(el).attr('href') || '';
+      if (src && mixedContentUrls.length < 10) {
+        mixedContentUrls.push(src);
+      }
+    });
+  }
+
+  return {
+    inlineStyleCount: inlineStyles.length,
+    inlineStyleBytes,
+    inlineScriptCount,
+    inlineScriptBytes,
+    externalStylesheetCount,
+    externalScriptCount,
+    renderBlockingScripts,
+    preconnectCount,
+    prefetchCount,
+    hasMixedContent: mixedContentUrls.length > 0,
+    mixedContentUrls,
+  };
+}
+
+function extractContentDetailInfo($: cheerio.CheerioAPI, textContent: string): ContentDetailInfo {
+  // Paragraphs
+  const paragraphs = $('p');
+  const paragraphCount = paragraphs.length;
+
+  // Sentence analysis
+  const sentences = textContent.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  const avgSentenceLength = sentences.length > 0
+    ? Math.round(sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0) / sentences.length)
+    : 0;
+  const longSentenceCount = sentences.filter(s => s.trim().split(/\s+/).length > 30).length;
+
+  // Lists
+  const listCount = $('ul, ol').length;
+  const listItemCount = $('li').length;
+
+  // Tables
+  const tableCount = $('table').length;
+
+  // Deprecated HTML tags
+  const deprecatedSelectors = ['font', 'center', 'marquee', 'blink', 'strike', 'big', 'tt', 'frame', 'frameset', 'applet'];
+  const deprecatedTags: string[] = [];
+  for (const tag of deprecatedSelectors) {
+    if ($(tag).length > 0) {
+      deprecatedTags.push(`<${tag}> (${$(tag).length}x)`);
+    }
+  }
+
+  return {
+    paragraphCount,
+    avgSentenceLength,
+    longSentenceCount,
+    listCount,
+    listItemCount,
+    tableCount,
+    hasDeprecatedTags: deprecatedTags.length > 0,
+    deprecatedTags,
+  };
 }
 
 function extractStructuredData($: cheerio.CheerioAPI): StructuredDataItem[] {

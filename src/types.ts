@@ -81,6 +81,60 @@ export const PageInfoSchema = z.object({
 });
 export type PageInfo = z.infer<typeof PageInfoSchema>;
 
+// ─── Hreflang ───────────────────────────────────────────────
+
+export const HreflangTagSchema = z.object({
+  lang: z.string(),
+  href: z.string(),
+});
+export type HreflangTag = z.infer<typeof HreflangTagSchema>;
+
+// ─── Accessibility Info ─────────────────────────────────────
+
+export const AccessibilityInfoSchema = z.object({
+  hasSkipNavigation: z.boolean().default(false),
+  hasAriaLandmarks: z.boolean().default(false),
+  ariaLandmarkCount: z.number().default(0),
+  formsTotal: z.number().default(0),
+  formsWithoutLabels: z.number().default(0),
+  tabindexPositiveCount: z.number().default(0),
+  iframeCount: z.number().default(0),
+  iframesWithoutTitle: z.number().default(0),
+  buttonsWithoutText: z.number().default(0),
+});
+export type AccessibilityInfo = z.infer<typeof AccessibilityInfoSchema>;
+
+// ─── Performance Info ───────────────────────────────────────
+
+export const PerformanceInfoSchema = z.object({
+  inlineStyleCount: z.number().default(0),
+  inlineStyleBytes: z.number().default(0),
+  inlineScriptCount: z.number().default(0),
+  inlineScriptBytes: z.number().default(0),
+  externalStylesheetCount: z.number().default(0),
+  externalScriptCount: z.number().default(0),
+  renderBlockingScripts: z.number().default(0),
+  preconnectCount: z.number().default(0),
+  prefetchCount: z.number().default(0),
+  hasMixedContent: z.boolean().default(false),
+  mixedContentUrls: z.array(z.string()).default([]),
+});
+export type PerformanceInfo = z.infer<typeof PerformanceInfoSchema>;
+
+// ─── Content Detail Info ────────────────────────────────────
+
+export const ContentDetailInfoSchema = z.object({
+  paragraphCount: z.number().default(0),
+  avgSentenceLength: z.number().default(0),
+  longSentenceCount: z.number().default(0),
+  listCount: z.number().default(0),
+  listItemCount: z.number().default(0),
+  tableCount: z.number().default(0),
+  hasDeprecatedTags: z.boolean().default(false),
+  deprecatedTags: z.array(z.string()).default([]),
+});
+export type ContentDetailInfo = z.infer<typeof ContentDetailInfoSchema>;
+
 // ─── Crawl Data ──────────────────────────────────────────────
 
 export const CrawlDataSchema = z.object({
@@ -92,6 +146,13 @@ export const CrawlDataSchema = z.object({
   structuredData: z.array(StructuredDataItemSchema).default([]),
   rawHtml: z.string().default(''),
   textContent: z.string().default(''),
+  // Extended crawl data
+  hasFavicon: z.boolean().default(false),
+  hasDoctype: z.boolean().default(false),
+  hreflangTags: z.array(HreflangTagSchema).default([]),
+  accessibility: AccessibilityInfoSchema.default({}),
+  performance: PerformanceInfoSchema.default({}),
+  contentDetail: ContentDetailInfoSchema.default({}),
 });
 export type CrawlData = z.infer<typeof CrawlDataSchema>;
 

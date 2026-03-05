@@ -188,24 +188,29 @@ npx tsx src/index.ts --help
 
 ## SEO Checks
 
-The system performs **30+ individual checks** across 7 categories:
+The system performs **60+ individual checks** across 12 categories:
 
 | Category | Checks |
 |---|---|
-| **Title Tag** | Present, length (30-60 characters), keyword placement |
-| **Meta Description** | Present, length (120-160 characters), unique |
-| **Headings** | H1 present (exactly 1), H2 structure, hierarchy order |
-| **Images** | Alt texts present, lazy loading, dimensions |
-| **Links** | Internal linking (10+), anchor texts, nofollow |
-| **Technical** | HTTPS, load time (<500ms), robots.txt, sitemap, viewport, canonical |
-| **Content** | Word count (300+), Schema.org/JSON-LD, Open Graph tags |
+| **Title Tag** | Present, length (30-60 chars), domain-only detection, separator start, duplicate words, ALL CAPS, CTR boosters (numbers/power words) |
+| **Meta Description** | Present, length (120-160 chars), unique vs title, call-to-action presence, numbers/stats for CTR |
+| **Headings** | H1 count (exactly 1), H1 length, H1 vs title, H2/H3 structure, hierarchy continuity, duplicates, short headings, keyword stuffing, heading-to-content ratio |
+| **Images** | Alt texts (missing, generic, too long), width/height attributes (CLS), next-gen formats (WebP/AVIF), descriptive filenames, lazy loading for below-fold |
+| **Links** | Internal/external count, empty anchors, generic anchors ("click here"), nofollow on internal, excessive duplicates, total link count |
+| **Technical** | HTTP status, HTTPS, redirects, load time, robots.txt, noindex/nofollow, sitemap, viewport, canonical, lang attribute, page size, DOCTYPE, favicon, mixed content, deprecated HTML tags |
+| **Content** | Word count, text-to-HTML ratio, Schema.org/JSON-LD, readability (sentence length), long sentences, paragraph structure, list usage |
+| **Social Media** | og:title, og:description, og:image, og:type, Twitter Card, completeness check |
+| **URL** | Parameters, length, uppercase, underscores, special chars, directory depth, file extensions |
+| **Accessibility** | ARIA landmarks, semantic HTML, skip navigation, form labels, positive tabindex, iframe titles, button labels, image alt (a11y) |
+| **Performance** | Render-blocking scripts, inline CSS/JS size, external resource count, resource hints (preconnect/preload), HTML payload size, mixed content |
+| **International** | Hreflang tags, x-default, self-referencing hreflang, valid language codes, lang attribute consistency |
 
 ### Severity Levels
 
 - `CRITICAL` — Severe issue, fix immediately
 - `WARNING` — Should be fixed, medium priority
 - `INFO` — Improvement suggestion, low priority
-- `GOOD` — No action needed
+- `GOOD` — No action needed, positive signal
 
 ---
 
@@ -215,14 +220,19 @@ The system performs **30+ individual checks** across 7 categories:
 
 Fetches the target URL and extracts all SEO-relevant data:
 
-- HTTP status, load time, content type
+- HTTP status, load time, content type, HTTPS
 - Meta tags (title, description, robots, canonical, viewport)
 - Open Graph + Twitter Card tags
-- Heading structure (H1-H6)
+- Heading structure (H1-H6) in document order
 - Internal and external links with anchor texts
-- Images with alt text analysis
+- Images with alt text, dimensions, lazy loading, format analysis
 - Schema.org / JSON-LD structured data
 - Robots.txt and sitemap.xml check
+- Favicon and DOCTYPE detection
+- Hreflang tags (international SEO)
+- Accessibility data (ARIA landmarks, form labels, skip nav, iframes, buttons)
+- Performance data (inline CSS/JS, render-blocking scripts, resource hints, mixed content)
+- Content structure (paragraphs, sentence length, lists, tables, deprecated tags)
 
 ### Analyzer Agent
 
